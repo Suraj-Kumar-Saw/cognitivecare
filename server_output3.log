@@ -151,3 +151,17 @@ For more information on production servers see: https://docs.djangoproject.com/e
 INFO 2026-04-07 20:26:40,858 autoreload 193518 140664623827840 Watching for file changes with StatReloader
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/django/core/handlers/base.py:62: UserWarning: No directory at: /app/staticfiles/
   mw_instance = middleware(adapted_handler)
+INFO 2026-04-07 20:43:21,687 autoreload 193518 140664623827840 /app/care/services/gemini.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+April 07, 2026 - 20:26:42
+Django version 6.0.4, using settings 'config.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/
+INFO 2026-04-07 20:43:25,485 autoreload 235345 140153865898880 Watching for file changes with StatReloader
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/django/core/handlers/base.py:62: UserWarning: No directory at: /app/staticfiles/
+  mw_instance = middleware(adapted_handler)

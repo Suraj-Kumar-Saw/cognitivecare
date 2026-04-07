@@ -137,7 +137,7 @@ Patient Query: {query}"""
 
         logger.info("Calling Gemini API generate_content")
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.0-flash",
             contents=types.Content(role="user", parts=parts),
             config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
         )
@@ -205,7 +205,7 @@ def get_helpful_tip() -> str:
     try:
         client = _client()
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.0-flash",
             contents="Provide a short, encouraging, and practical tip for someone with early-to-middle stage "
                      "Alzheimer's to help them manage their day. Keep it to 1-2 sentences. Warm and supportive tone.",
         )
