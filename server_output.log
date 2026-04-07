@@ -1,0 +1,19 @@
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: (staticfiles.W004) The directory '/app/static' in the STATICFILES_DIRS setting does not exist.
+
+System check identified 1 issue (0 silenced).
+Performing system checks...
+
+
+You have 3 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): care, contenttypes.
+Run 'python manage.py migrate' to apply them.
+April 07, 2026 - 18:56:42
+Django version 6.0.4, using settings 'config.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/

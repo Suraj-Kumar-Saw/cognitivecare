@@ -1,0 +1,37 @@
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/django/core/handlers/base.py:62: UserWarning: No directory at: /app/staticfiles/
+  mw_instance = middleware(adapted_handler)
+[07/Apr/2026 19:10:25] "HEAD / HTTP/1.1" 200 0
+[07/Apr/2026 19:12:07] "GET / HTTP/1.1" 200 44299
+[07/Apr/2026 19:12:08] "GET /api/routines HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/crisis_events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/habits HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/tasks HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/emotional_logs HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/habits HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/memory HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/routines HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/tasks HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/emotional_logs HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/memory HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/crisis_events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:08] "GET /api/ai/tip HTTP/1.1" 500 145
+[07/Apr/2026 19:12:08] "GET /api/ai/tip HTTP/1.1" 500 145
+[07/Apr/2026 19:12:25] "GET / HTTP/1.1" 200 44299
+[07/Apr/2026 19:12:26] "GET /api/routines HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/emotional_logs HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/tasks HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/habits HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/memory HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/crisis_events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/routines HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/tasks HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/memory HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/emotional_logs HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/habits HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/crisis_events HTTP/1.1" 200 2
+[07/Apr/2026 19:12:26] "GET /api/ai/tip HTTP/1.1" 500 145
+[07/Apr/2026 19:12:26] "GET /api/ai/tip HTTP/1.1" 500 145
