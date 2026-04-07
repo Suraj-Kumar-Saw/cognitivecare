@@ -8,11 +8,12 @@ from datetime import datetime
 from django.conf import settings
 from google import genai
 from google.genai import types
+import logging
 
+logger = logging.getLogger(__name__)
 
 def _client():
     return genai.Client(api_key=settings.GEMINI_API_KEY)
-
 
 SYSTEM_PROMPT = """You are "Memory Companion", a virtual assistant for a patient with early-to-middle stage Alzheimer's.
 Your goal is to provide factually grounded, reassuring, and simple answers based ONLY on the provided Knowledge Base and Schedule.
@@ -60,6 +61,7 @@ def query_memory(
     emotional_logs: list = None,
     audio_data: dict = None,
 ) -> dict:
+    logger.info(f"Preparing memory query context for prompt. Query: {query}")
     history = history or []
     routines = routines or []
     completed_routine_ids = completed_routine_ids or []
@@ -119,39 +121,60 @@ Recent Dialogue:
 
 Patient Query: {query}"""
 
-    client = _client()
-    parts = [types.Part.from_text(text=prompt)]
+    logger.debug(f"Full query prompt generated:\n{prompt}")
 
-    if audio_data:
-        raw = base64.b64decode(audio_data["base64"])
-        parts.append(types.Part.from_bytes(data=raw, mime_type=audio_data["mimeType"]))
+    try:
+        client = _client()
+        parts = [types.Part.from_text(text=prompt)]
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=types.Content(role="user", parts=parts),
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
-    )
-    raw_text = response.text.strip()
-    if raw_text.startswith("```"):
-        lines = raw_text.split("\n")
-        raw_text = "\n".join(lines[1:-1])
+        if audio_data:
+            try:
+                raw = base64.b64decode(audio_data["base64"])
+                parts.append(types.Part.from_bytes(data=raw, mime_type=audio_data["mimeType"]))
+                logger.info(f"Audio data decoded and appended to parts. Mime Type: {audio_data.get('mimeType')}")
+            except Exception as e:
+                logger.error(f"Failed to decode audio data base64: {e}", exc_info=True)
 
-    result = json.loads(raw_text)
+        logger.info("Calling Gemini API generate_content")
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=types.Content(role="user", parts=parts),
+            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
+        )
+        raw_text = response.text.strip()
+        logger.debug(f"Raw Gemini API response: {raw_text}")
 
-    image_url = None
-    if result.get("factId"):
-        fact = next((f for f in facts if f["id"] == result["factId"]), None)
-        if fact:
-            image_url = fact.get("image_url")
-    result["imageUrl"] = image_url
-    return result
+        if raw_text.startswith("```"):
+            lines = raw_text.split("\n")
+            raw_text = "\n".join(lines[1:-1])
+
+        try:
+            result = json.loads(raw_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON from Gemini API response: {e}. Raw text: {raw_text}", exc_info=True)
+            raise e
+
+        image_url = None
+        if result.get("factId"):
+            fact = next((f for f in facts if f["id"] == result["factId"]), None)
+            if fact:
+                image_url = fact.get("image_url")
+        result["imageUrl"] = image_url
+        logger.info("Successfully completed query_memory")
+        return result
+    except Exception as e:
+        logger.error(f"Error executing query_memory: {e}", exc_info=True)
+        raise e
 
 
 def generate_speech(text: str) -> str | None:
+    logger.info(f"Generating TTS for text length: {len(text) if text else 0}")
     if not text or not text.strip():
+        logger.warning("Empty text for TTS generation")
         return None
-    client = _client()
     try:
+        client = _client()
+        logger.debug(f"Calling Gemini API generate_content for TTS")
         response = client.models.generate_content(
             model="gemini-2.5-flash-preview-tts",
             contents=f"Say: {text.strip()}",
@@ -167,20 +190,28 @@ def generate_speech(text: str) -> str | None:
         part = response.candidates[0].content.parts[0]
         inline = getattr(part, "inline_data", None)
         if inline and inline.data:
-            return base64.b64encode(inline.data).decode("utf-8")
+            b64_audio = base64.b64encode(inline.data).decode("utf-8")
+            logger.info("Successfully generated and encoded TTS audio")
+            return b64_audio
+        else:
+            logger.warning("No audio inline_data returned in TTS response")
     except Exception as e:
-        print(f"TTS error: {e}")
+        logger.error(f"TTS error: {e}", exc_info=True)
     return None
 
 
 def get_helpful_tip() -> str:
-    client = _client()
+    logger.info("Requesting helpful tip from Gemini")
     try:
+        client = _client()
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents="Provide a short, encouraging, and practical tip for someone with early-to-middle stage "
                      "Alzheimer's to help them manage their day. Keep it to 1-2 sentences. Warm and supportive tone.",
         )
-        return response.text.strip()
-    except Exception:
+        tip = response.text.strip()
+        logger.info(f"Successfully received tip: {tip}")
+        return tip
+    except Exception as e:
+        logger.error(f"Tip generation error: {e}", exc_info=True)
         return "Focus on one small task at a time. You're doing great."

@@ -35,3 +35,17 @@
 [07/Apr/2026 19:12:26] "GET /api/crisis_events HTTP/1.1" 200 2
 [07/Apr/2026 19:12:26] "GET /api/ai/tip HTTP/1.1" 500 145
 [07/Apr/2026 19:12:26] "GET /api/ai/tip HTTP/1.1" 500 145
+Performing system checks...
+
+System check identified no issues (0 silenced).
+April 07, 2026 - 19:10:07
+Django version 6.0.4, using settings 'config.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/
+INFO 2026-04-07 20:18:32,994 autoreload 91155 140451804408704 Watching for file changes with StatReloader
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/django/core/handlers/base.py:62: UserWarning: No directory at: /app/staticfiles/
+  mw_instance = middleware(adapted_handler)
+Error: That port is already in use.

@@ -75,3 +75,10 @@ Traceback (most recent call last):
     conn = Database.connect(**conn_params)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 django.db.utils.OperationalError: unable to open database file
+Performing system checks...
+
+System check identified no issues (0 silenced).
+INFO 2026-04-07 20:18:32,993 autoreload 91126 140502342945664 Watching for file changes with StatReloader
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/django/core/handlers/base.py:62: UserWarning: No directory at: /app/staticfiles/
+  mw_instance = middleware(adapted_handler)
+Error: That port is already in use.
