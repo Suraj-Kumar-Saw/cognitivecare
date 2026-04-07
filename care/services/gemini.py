@@ -8,6 +8,10 @@ from datetime import datetime
 from django.conf import settings
 from google import genai
 from google.genai import types
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 def _client():
@@ -119,6 +123,8 @@ Recent Dialogue:
 
 Patient Query: {query}"""
 
+    logger.info(f"Querying Gemini API with query: {query}")
+    logger.debug(f"Full prompt context: {prompt}")
     client = _client()
     parts = [types.Part.from_text(text=prompt)]
 
@@ -136,6 +142,7 @@ Patient Query: {query}"""
         lines = raw_text.split("\n")
         raw_text = "\n".join(lines[1:-1])
 
+    logger.debug(f"Gemini API response: {raw_text}")
     result = json.loads(raw_text)
 
     image_url = None
@@ -148,8 +155,11 @@ Patient Query: {query}"""
 
 
 def generate_speech(text: str) -> str | None:
+    logger.info(f"Generating TTS for text: {text}")
     if not text or not text.strip():
         return None
+    logger.info(f"Querying Gemini API with query: {query}")
+    logger.debug(f"Full prompt context: {prompt}")
     client = _client()
     try:
         response = client.models.generate_content(
@@ -169,11 +179,14 @@ def generate_speech(text: str) -> str | None:
         if inline and inline.data:
             return base64.b64encode(inline.data).decode("utf-8")
     except Exception as e:
-        print(f"TTS error: {e}")
+        logger.error(f"TTS error: {e}", exc_info=True)
     return None
 
 
 def get_helpful_tip() -> str:
+    logger.info("Requesting helpful tip from Gemini")
+    logger.info(f"Querying Gemini API with query: {query}")
+    logger.debug(f"Full prompt context: {prompt}")
     client = _client()
     try:
         response = client.models.generate_content(
@@ -182,5 +195,6 @@ def get_helpful_tip() -> str:
                      "Alzheimer's to help them manage their day. Keep it to 1-2 sentences. Warm and supportive tone.",
         )
         return response.text.strip()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Tip generation error: {e}", exc_info=True)
         return "Focus on one small task at a time. You're doing great."
