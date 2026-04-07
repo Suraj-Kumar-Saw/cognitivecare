@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+
+# Django
+*.sqlite3
+cognitive_care.db
+staticfiles/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dev tools
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Docker
+# Dockerfile
+# docker-compose.yml
+# docker-entrypoint.sh
+.dockerignore

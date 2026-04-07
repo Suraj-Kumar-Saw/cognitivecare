@@ -1,0 +1,25 @@
+services:
+  web:
+    build: .
+    container_name: cognitivecareDjango
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - cognitivecare_data:/data   # SQLite DB persists here
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  cognitivecare_data:
+    driver: local

@@ -1,0 +1,837 @@
+{% extends 'care/base.html' %}
+{% block content %}
+
+<div x-data="app()" x-init="init()" class="min-h-screen">
+
+  <!-- ── View Switcher ── -->
+  <div class="fixed bottom-6 right-6 z-50 flex gap-2 bg-white/90 backdrop-blur-sm shadow-xl p-2 rounded-2xl border border-slate-200">
+    <button @click="view = 'patient'"
+      :class="view === 'patient' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'"
+      class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      Patient View
+    </button>
+    <button @click="view = 'caregiver'"
+      :class="view === 'caregiver' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'"
+      class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+      Caregiver View
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       PATIENT VIEW
+  ══════════════════════════════════════════════════════ -->
+  <div x-show="view === 'patient'" x-cloak class="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-indigo-50/30">
+    
+    <!-- Header -->
+    <header class="px-8 pt-10 pb-6">
+      <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-400 tracking-widest uppercase mb-1" x-text="currentTimeStr"></p>
+          <h1 class="font-display text-4xl text-slate-800">Good morning, Arthur.</h1>
+          <p class="text-slate-500 mt-1" x-text="helpfulTip"></p>
+        </div>
+        <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-3xl">🌿</div>
+      </div>
+    </header>
+
+    <!-- Active Reminder Banner -->
+    <div x-show="activeReminder" x-cloak class="max-w-2xl mx-auto px-8 mb-4">
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">⏰</div>
+        <div class="flex-1">
+          <p class="font-semibold text-amber-900" x-text="activeReminder?.title"></p>
+          <p class="text-sm text-amber-700">Time for your scheduled routine</p>
+        </div>
+        <button @click="confirmReminder()" class="px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors">Done ✓</button>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-8 space-y-6 pb-32">
+
+      <!-- Today's Schedule -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-7">
+        <h2 class="font-semibold text-slate-700 text-lg mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Today's Schedule
+        </h2>
+        <div class="space-y-2">
+          <template x-for="r in routines" :key="r.id">
+            <div class="flex items-center gap-4 p-3 rounded-2xl transition-colors"
+              :class="completedRoutineIds.includes(r.id) ? 'bg-emerald-50' : 'hover:bg-slate-50'">
+              <div class="w-16 text-xs font-bold text-slate-400 text-right" x-text="r.time"></div>
+              <div class="flex-1">
+                <span class="font-medium text-slate-700" x-text="r.title"></span>
+                <span class="ml-2 text-xs text-slate-400" x-text="r.category"></span>
+              </div>
+              <div x-show="completedRoutineIds.includes(r.id)" class="text-emerald-500 text-lg">✓</div>
+              <button x-show="!completedRoutineIds.includes(r.id)" @click="markRoutineDone(r.id)"
+                class="text-xs px-3 py-1.5 bg-slate-100 text-slate-500 rounded-xl hover:bg-emerald-100 hover:text-emerald-700 transition-colors font-medium">
+                Done
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- AI Companion -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-7">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-semibold text-slate-700 text-lg flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Memory Companion
+          </h2>
+          <!-- Mic button -->
+          <button @click="toggleListening()"
+            class="relative w-14 h-14 rounded-full flex items-center justify-center transition-all"
+            :class="isListening ? 'bg-red-500 text-white pulse-ring' : 'bg-indigo-50 text-indigo-500 hover:bg-indigo-100'">
+            <svg x-show="!isListening" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+            <svg x-show="isListening" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          </button>
+        </div>
+
+        <!-- Interim transcript -->
+        <div x-show="interimTranscript" class="mb-3 text-slate-400 italic text-sm px-2" x-text="'Hearing: ' + interimTranscript"></div>
+
+        <!-- Chat history -->
+        <div class="h-72 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
+          <div x-show="chatHistory.length === 0 && !isQuerying" class="h-full flex flex-col items-center justify-center text-slate-300 text-center space-y-2">
+            <div class="text-4xl">🎙️</div>
+            <p class="text-sm">Tap the microphone or type below to ask anything.</p>
+          </div>
+          <template x-for="(msg, i) in chatHistory" :key="i">
+            <div :class="msg.role === 'user' ? 'ml-8' : 'mr-8'">
+              <div :class="msg.role === 'user' ? 'bg-indigo-50 text-indigo-900 rounded-tl-3xl rounded-bl-3xl rounded-tr-sm rounded-br-3xl ml-auto' : 'bg-slate-50 text-slate-800 rounded-tr-3xl rounded-br-3xl rounded-tl-sm'"
+                class="p-4 text-base leading-relaxed">
+                <p class="text-xs font-bold uppercase tracking-widest opacity-40 mb-1" x-text="msg.role === 'user' ? 'You' : 'Companion'"></p>
+                <p x-text="msg.text"></p>
+              </div>
+            </div>
+          </template>
+          <div x-show="isQuerying" class="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-3xl w-24">
+            <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+            <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+            <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+          </div>
+        </div>
+
+        <!-- Response image -->
+        <div x-show="lastResponse && lastResponse.imageUrl" class="mb-4">
+          <img :src="lastResponse?.imageUrl" class="w-32 h-32 rounded-2xl object-cover shadow-md" />
+        </div>
+
+        <!-- Text input -->
+        <div class="flex gap-2">
+          <input x-model="query" @keydown.enter="submitQuery()"
+            type="text" placeholder="Type your question…"
+            class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 text-base focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-slate-50" />
+          <button @click="submitQuery()" :disabled="isQuerying || !query.trim()"
+            class="px-5 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+            Ask
+          </button>
+        </div>
+      </div>
+
+      <!-- Habits quick log -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-7" x-show="habits.length > 0">
+        <h2 class="font-semibold text-slate-700 text-lg mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          Habits
+        </h2>
+        <div class="space-y-3">
+          <template x-for="h in habits" :key="h.id">
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <p class="font-medium text-slate-700" x-text="h.title"></p>
+                <div class="flex items-center gap-1 mt-1">
+                  <template x-for="i in h.target_count" :key="i">
+                    <div class="w-4 h-4 rounded-full border-2 transition-colors"
+                      :class="i <= h.current_count ? (h.type === 'build' ? 'bg-emerald-500 border-emerald-500' : 'bg-red-400 border-red-400') : 'border-slate-200'">
+                    </div>
+                  </template>
+                  <span class="text-xs text-slate-400 ml-1" x-text="h.current_count + '/' + h.target_count"></span>
+                </div>
+              </div>
+              <button @click="incrementHabit(h.id)"
+                :class="h.type === 'build' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-500 hover:bg-red-100'"
+                class="px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                <span x-text="h.type === 'build' ? '+ Log' : '− Log'"></span>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       CAREGIVER VIEW
+  ══════════════════════════════════════════════════════ -->
+  <div x-show="view === 'caregiver'" x-cloak class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col p-5 fixed inset-y-0 left-0 z-10">
+      <div class="flex items-center gap-3 mb-8 px-2 pt-2">
+        <div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        </div>
+        <span class="font-bold text-lg tracking-tight">CognitiveCare</span>
+      </div>
+
+      <nav class="space-y-1 flex-1">
+        <template x-for="tab in caregiverTabs" :key="tab.id">
+          <button @click="activeTab = tab.id"
+            :class="activeTab === tab.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium">
+            <span x-text="tab.icon" class="text-base"></span>
+            <span x-text="tab.label"></span>
+          </button>
+        </template>
+      </nav>
+
+      <div class="mt-auto p-4 bg-slate-800 rounded-2xl">
+        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Patient Status</p>
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span class="text-sm font-medium">Arthur Miller</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 ml-64 p-8">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold text-slate-800 capitalize" x-text="caregiverTabs.find(t => t.id === activeTab)?.label"></h1>
+        <button @click="injectAnomaly()"
+          class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Inject Anomaly
+        </button>
+      </div>
+
+      <!-- ── Dashboard Tab ── -->
+      <div x-show="activeTab === 'dashboard'" class="space-y-6">
+        <!-- Stats row -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Routines</p>
+            <p class="text-3xl font-bold text-slate-800" x-text="routines.length"></p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Memory Facts</p>
+            <p class="text-3xl font-bold text-indigo-600" x-text="memory.length"></p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Crisis Events</p>
+            <p class="text-3xl font-bold text-red-500" x-text="crisisEvents.filter(c => !c.acknowledged).length"></p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Alerts Today</p>
+            <p class="text-3xl font-bold text-amber-500" x-text="logs.filter(l => l.alert_tier >= 2).length"></p>
+          </div>
+        </div>
+
+        <!-- Unacknowledged crises -->
+        <div x-show="crisisEvents.filter(c => !c.acknowledged).length > 0">
+          <h3 class="font-semibold text-red-600 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            Unacknowledged Crises
+          </h3>
+          <div class="space-y-2">
+            <template x-for="c in crisisEvents.filter(c => !c.acknowledged)" :key="c.id">
+              <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p class="font-medium text-red-800" x-text="c.trigger_text"></p>
+                  <p class="text-xs text-red-500 mt-1" x-text="new Date(c.timestamp).toLocaleString()"></p>
+                </div>
+                <button @click="acknowledgeCrisis(c.id)" class="px-3 py-1.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600">Acknowledge</button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Recent logs -->
+        <div>
+          <h3 class="font-semibold text-slate-700 mb-3">Recent Activity</h3>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-50">
+            <template x-for="l in logs.slice(0,8)" :key="l.id">
+              <div class="flex items-center gap-4 px-5 py-3">
+                <span class="w-2 h-2 rounded-full flex-shrink-0"
+                  :class="l.alert_tier >= 3 ? 'bg-red-400' : l.alert_tier === 2 ? 'bg-amber-400' : 'bg-emerald-400'"></span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-slate-700 truncate" x-text="l.event_type"></p>
+                  <p class="text-xs text-slate-400 truncate" x-text="l.details"></p>
+                </div>
+                <p class="text-xs text-slate-400 flex-shrink-0" x-text="new Date(l.timestamp).toLocaleTimeString()"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Schedule Tab ── -->
+      <div x-show="activeTab === 'schedule'" class="space-y-6">
+        <!-- Add routine form -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6" x-data="{ form: { title: '', time: '08:00', category: 'Medication', alert_tier: 1 } }">
+          <h3 class="font-semibold text-slate-700 mb-4">Add Routine</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <input x-model="form.title" type="text" placeholder="Routine title"
+              class="col-span-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            <input x-model="form.time" type="time"
+              class="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            <select x-model="form.category"
+              class="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option>Medication</option><option>Nutrition</option><option>Social</option>
+              <option>Physical Activity</option><option>Other</option>
+            </select>
+            <select x-model.number="form.alert_tier"
+              class="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option value="1">Tier 1 – Info</option>
+              <option value="2">Tier 2 – Warning</option>
+              <option value="3">Tier 3 – Critical</option>
+            </select>
+            <button @click="addRoutine(form); form.title = ''"
+              class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
+              + Add
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-50">
+          <template x-for="r in routines" :key="r.id">
+            <div class="flex items-center gap-4 px-5 py-4">
+              <div class="w-14 text-sm font-bold text-slate-400 text-right" x-text="r.time"></div>
+              <div class="flex-1">
+                <p class="font-medium text-slate-700" x-text="r.title"></p>
+                <span class="text-xs px-2 py-0.5 rounded-full"
+                  :class="r.category === 'Medication' ? 'bg-red-50 text-red-500' : r.category === 'Nutrition' ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-500'"
+                  x-text="r.category"></span>
+              </div>
+              <button @click="deleteRoutine(r.id)"
+                class="text-slate-300 hover:text-red-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── Tasks & Habits Tab ── -->
+      <div x-show="activeTab === 'tasks_habits'" class="grid grid-cols-2 gap-6">
+        <!-- Habits -->
+        <div class="space-y-4">
+          <h3 class="font-semibold text-slate-700">Habits</h3>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5" x-data="{ form: { title: '', type: 'build', target_count: 1, category: '' } }">
+            <div class="space-y-2 mb-3">
+              <input x-model="form.title" type="text" placeholder="Habit name"
+                class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <div class="flex gap-2">
+                <select x-model="form.type" class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none">
+                  <option value="build">Build ✓</option><option value="break">Break ✗</option>
+                </select>
+                <input x-model.number="form.target_count" type="number" min="1" max="20" placeholder="Target"
+                  class="w-20 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none" />
+              </div>
+            </div>
+            <button @click="addHabit(form); form.title = ''; form.target_count = 1"
+              class="w-full py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700">+ Add Habit</button>
+          </div>
+          <div class="space-y-2">
+            <template x-for="h in habits" :key="h.id">
+              <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-3">
+                <span :class="h.type === 'build' ? 'text-emerald-500' : 'text-red-400'" class="text-lg" x-text="h.type === 'build' ? '📈' : '📉'"></span>
+                <div class="flex-1">
+                  <p class="font-medium text-slate-700 text-sm" x-text="h.title"></p>
+                  <p class="text-xs text-slate-400" x-text="h.current_count + ' / ' + h.target_count + ' today'"></p>
+                </div>
+                <button @click="deleteHabit(h.id)" class="text-slate-300 hover:text-red-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="space-y-4">
+          <h3 class="font-semibold text-slate-700">One-Time Tasks</h3>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5" x-data="{ form: { title: '', due_date: '', category: 'Health', alert_tier: 1 } }">
+            <div class="space-y-2 mb-3">
+              <input x-model="form.title" type="text" placeholder="Task title"
+                class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <div class="flex gap-2">
+                <input x-model="form.due_date" type="date"
+                  class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none" />
+                <select x-model="form.category" class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none">
+                  <option>Health</option><option>Social</option><option>Personal</option><option>Other</option>
+                </select>
+              </div>
+            </div>
+            <button @click="addTask(form); form.title = ''"
+              class="w-full py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700">+ Add Task</button>
+          </div>
+          <div class="space-y-2">
+            <template x-for="t in tasks" :key="t.id">
+              <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-3">
+                <span class="text-lg" x-text="t.completed ? '✅' : '⬜'"></span>
+                <div class="flex-1">
+                  <p class="font-medium text-slate-700 text-sm" :class="t.completed ? 'line-through text-slate-400' : ''" x-text="t.title"></p>
+                  <p class="text-xs text-slate-400" x-text="t.due_date"></p>
+                </div>
+                <button @click="deleteTask(t.id)" class="text-slate-300 hover:text-red-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Memory Tab ── -->
+      <div x-show="activeTab === 'memory'" class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6" x-data="{ form: { category: 'Identity', fact: '', details: '', image_url: '' } }">
+          <h3 class="font-semibold text-slate-700 mb-4">Add Memory Fact</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <select x-model="form.category"
+              class="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option>Identity</option><option>Family</option><option>Medication</option><option>Preference</option><option>Other</option>
+            </select>
+            <input x-model="form.fact" type="text" placeholder="Fact label (e.g. My Name)"
+              class="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            <textarea x-model="form.details" placeholder="Details (what the AI will tell the patient)"
+              class="col-span-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 h-20 resize-none"></textarea>
+            <input x-model="form.image_url" type="url" placeholder="Image URL (optional)"
+              class="col-span-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            <button @click="addMemory(form); form.fact = ''; form.details = ''; form.image_url = ''"
+              class="col-span-2 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700">+ Add Memory</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <template x-for="f in memory" :key="f.id">
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex gap-4">
+              <img x-show="f.image_url" :src="f.image_url" class="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+              <div class="flex-1 min-w-0">
+                <span class="text-xs font-bold uppercase tracking-widest text-indigo-400" x-text="f.category"></span>
+                <p class="font-semibold text-slate-700 truncate" x-text="f.fact"></p>
+                <p class="text-sm text-slate-500 mt-1 line-clamp-2" x-text="f.details"></p>
+              </div>
+              <button @click="deleteMemory(f.id)" class="text-slate-300 hover:text-red-400 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── Mental Health Tab ── -->
+      <div x-show="activeTab === 'mental_health'" class="space-y-6">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Avg Sentiment</p>
+            <p class="text-3xl font-bold"
+              :class="avgSentiment > 0.3 ? 'text-emerald-500' : avgSentiment < -0.3 ? 'text-red-500' : 'text-amber-500'"
+              x-text="avgSentiment.toFixed(2)"></p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">High Risk Logs</p>
+            <p class="text-3xl font-bold text-red-500" x-text="emotionalLogs.filter(l => l.risk_level === 'high').length"></p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 text-center">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Total Interactions</p>
+            <p class="text-3xl font-bold text-indigo-500" x-text="emotionalLogs.length"></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-50">
+            <h3 class="font-semibold text-slate-700">Emotional Log History</h3>
+          </div>
+          <div class="divide-y divide-slate-50">
+            <template x-for="l in emotionalLogs.slice(0, 20)" :key="l.id">
+              <div class="px-6 py-4 flex items-start gap-4">
+                <span class="text-xl flex-shrink-0" x-text="l.risk_level === 'high' ? '🔴' : l.risk_level === 'medium' ? '🟡' : '🟢'"></span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-medium text-slate-700 text-sm" x-text="l.emotion || 'Unknown'"></span>
+                    <span class="text-xs text-slate-400" x-text="'Score: ' + (l.sentiment_score || 0).toFixed(2)"></span>
+                    <span x-show="l.energy_level" class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full" x-text="l.energy_level"></span>
+                  </div>
+                  <p class="text-sm text-slate-600 truncate" x-text="'Q: ' + l.query"></p>
+                  <p class="text-xs text-slate-400 mt-1" x-text="new Date(l.timestamp).toLocaleString()"></p>
+                </div>
+              </div>
+            </template>
+            <div x-show="emotionalLogs.length === 0" class="px-6 py-10 text-center text-slate-400 text-sm">
+              No emotional logs yet. They'll appear here as the patient interacts.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Logs Tab ── -->
+      <div x-show="activeTab === 'logs'" class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div class="divide-y divide-slate-50">
+          <template x-for="l in logs" :key="l.id">
+            <div class="px-6 py-4 flex items-center gap-4">
+              <span class="w-2 h-2 rounded-full flex-shrink-0"
+                :class="l.alert_tier >= 3 ? 'bg-red-400' : l.alert_tier === 2 ? 'bg-amber-400' : 'bg-emerald-400'"></span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-700" x-text="l.event_type"></p>
+                <p class="text-xs text-slate-400 truncate" x-text="l.details"></p>
+              </div>
+              <span class="text-xs font-bold px-2 py-1 rounded-lg flex-shrink-0"
+                :class="l.alert_tier >= 3 ? 'bg-red-50 text-red-500' : l.alert_tier === 2 ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'"
+                x-text="'Tier ' + l.alert_tier"></span>
+              <p class="text-xs text-slate-400 flex-shrink-0 w-32 text-right" x-text="new Date(l.timestamp).toLocaleString()"></p>
+            </div>
+          </template>
+          <div x-show="logs.length === 0" class="px-6 py-10 text-center text-slate-400 text-sm">No logs yet.</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+function app() {
+  return {
+    view: 'patient',
+    activeTab: 'dashboard',
+    caregiverTabs: [
+      { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+      { id: 'schedule', label: 'Schedule Editor', icon: '🗓️' },
+      { id: 'tasks_habits', label: 'Tasks & Habits', icon: '✅' },
+      { id: 'memory', label: 'Knowledge Base', icon: '🧠' },
+      { id: 'mental_health', label: 'Mental Health', icon: '💙' },
+      { id: 'logs', label: 'Alert History', icon: '📋' },
+    ],
+
+    // Data
+    routines: [],
+    memory: [],
+    logs: [],
+    habits: [],
+    tasks: [],
+    emotionalLogs: [],
+    crisisEvents: [],
+
+    // Patient state
+    currentTimeStr: '',
+    helpfulTip: "Focus on one small task at a time. You're doing great.",
+    activeReminder: null,
+    completedRoutineIds: [],
+    query: '',
+    isListening: false,
+    isQuerying: false,
+    interimTranscript: '',
+    chatHistory: [],
+    lastResponse: null,
+    audioChunks: [],
+    mediaRecorder: null,
+    recognition: null,
+
+    get avgSentiment() {
+      if (!this.emotionalLogs.length) return 0;
+      return this.emotionalLogs.reduce((s, l) => s + (l.sentiment_score || 0), 0) / this.emotionalLogs.length;
+    },
+
+    async init() {
+      this.updateClock();
+      setInterval(() => this.updateClock(), 1000);
+      await this.fetchAll();
+      setInterval(() => this.fetchAll(), 5000);
+      this.checkReminders();
+      setInterval(() => this.checkReminders(), 30000);
+      this.loadTip();
+    },
+
+    updateClock() {
+      const now = new Date();
+      this.currentTimeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', weekday: 'long', month: 'long', day: 'numeric' });
+    },
+
+    async fetchAll() {
+      const [r, m, l, h, t, e, c] = await Promise.all([
+        fetch('/api/routines').then(r => r.json()),
+        fetch('/api/memory').then(r => r.json()),
+        fetch('/api/events').then(r => r.json()),
+        fetch('/api/habits').then(r => r.json()),
+        fetch('/api/tasks').then(r => r.json()),
+        fetch('/api/emotional_logs').then(r => r.json()),
+        fetch('/api/crisis_events').then(r => r.json()),
+      ]);
+      this.routines = r;
+      this.memory = m;
+      this.logs = l;
+      this.habits = h;
+      this.tasks = t;
+      this.emotionalLogs = e;
+      this.crisisEvents = c;
+    },
+
+    async loadTip() {
+      try {
+        const r = await fetch('/api/ai/tip');
+        const d = await r.json();
+        this.helpfulTip = d.tip;
+      } catch {}
+    },
+
+    checkReminders() {
+      const now = new Date();
+      const hhmm = now.toTimeString().slice(0, 5);
+      const due = this.routines.find(r => r.time === hhmm && !this.completedRoutineIds.includes(r.id));
+      if (due) this.activeReminder = due;
+    },
+
+    markRoutineDone(id) {
+      this.completedRoutineIds.push(id);
+      if (this.activeReminder?.id === id) this.activeReminder = null;
+      this.logEvent('reminder_confirmed', `Routine ${id} marked done`, 1);
+    },
+
+    confirmReminder() {
+      if (this.activeReminder) {
+        this.markRoutineDone(this.activeReminder.id);
+      }
+    },
+
+    async incrementHabit(id) {
+      await fetch(`/api/habits/${id}/increment`, { method: 'PUT' });
+      await this.fetchAll();
+    },
+
+    toggleListening() {
+      if (this.isListening) {
+        this.stopListening();
+      } else {
+        this.startListening();
+      }
+    },
+
+    startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) { alert('Speech recognition not supported in this browser.'); return; }
+
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+
+      this.recognition.onstart = () => { this.isListening = true; };
+      this.recognition.onend = () => { this.isListening = false; this.interimTranscript = ''; };
+
+      this.recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) final += event.results[i][0].transcript;
+          else interim += event.results[i][0].transcript;
+        }
+        this.interimTranscript = interim;
+        if (final.trim()) {
+          this.query = final.trim();
+          this.submitQuery();
+        }
+      };
+
+      this.recognition.start();
+
+      // Also start recording audio for emotion analysis
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        this.audioChunks = [];
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.mediaRecorder.ondataavailable = e => this.audioChunks.push(e.data);
+        this.mediaRecorder.start();
+      }).catch(() => {});
+    },
+
+    stopListening() {
+      if (this.recognition) { try { this.recognition.stop(); } catch {} }
+      this.isListening = false;
+    },
+
+    async submitQuery() {
+      const q = this.query.trim();
+      if (!q || this.isQuerying) return;
+      this.query = '';
+      this.isQuerying = true;
+      this.chatHistory.push({ role: 'user', text: q });
+
+      // Capture audio if available
+      let audioData = null;
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        if (this.audioChunks.length) {
+          const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+          const b64 = await new Promise(res => {
+            const reader = new FileReader();
+            reader.onload = () => res(reader.result.split(',')[1]);
+            reader.readAsDataURL(blob);
+          });
+          audioData = { base64: b64, mimeType: 'audio/webm' };
+        }
+        this.audioChunks = [];
+      }
+
+      try {
+        const res = await fetch('/api/ai/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: q,
+            history: this.chatHistory.slice(-6),
+            completedRoutineIds: this.completedRoutineIds,
+            audioData,
+          }),
+        });
+        const result = await res.json();
+        this.lastResponse = result;
+        this.chatHistory.push({ role: 'model', text: result.answer || "I'm sorry, I couldn't find an answer." });
+
+        // Log emotion
+        await this.logEmotion({
+          emotion: result.emotion || 'neutral',
+          sentiment_score: result.sentiment_score || 0,
+          risk_level: result.risk_level || 'low',
+          energy_level: result.energy_level || '',
+          query: q,
+          response: result.answer || '',
+          reasoning: result.reasoning || '',
+        });
+
+        // Log crisis if detected
+        if (result.crisis_detected) {
+          await this.logCrisis({ risk_level: 'high', trigger_text: q, action_taken: result.answer || '' });
+        }
+
+        // TTS
+        this.speak(result.answer);
+      } catch (err) {
+        this.chatHistory.push({ role: 'model', text: "I'm having trouble connecting right now. Please try again." });
+      } finally {
+        this.isQuerying = false;
+      }
+    },
+
+    async speak(text) {
+      try {
+        const res = await fetch('/api/ai/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const { audio } = await res.json();
+        if (!audio) return;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const raw = atob(audio);
+        const buf = new ArrayBuffer(raw.length);
+        const view = new Uint8Array(buf);
+        for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
+
+        const audioBuf = audioCtx.createBuffer(1, view.length / 2, 24000);
+        const channelData = audioBuf.getChannelData(0);
+        const int16 = new Int16Array(buf);
+        for (let i = 0; i < int16.length; i++) channelData[i] = int16[i] / 32768;
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuf;
+        source.connect(audioCtx.destination);
+        source.start();
+      } catch {}
+    },
+
+    // ── API helpers ──
+    async logEvent(type, details, tier) {
+      await fetch('/api/events', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: type, details, alert_tier: tier }),
+      });
+    },
+
+    async logEmotion(data) {
+      await fetch('/api/emotional_logs', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+
+    async logCrisis(data) {
+      await fetch('/api/crisis_events', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      await this.fetchAll();
+    },
+
+    async addRoutine(form) {
+      await fetch('/api/routines', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      await this.fetchAll();
+    },
+
+    async deleteRoutine(id) {
+      await fetch(`/api/routines/${id}`, { method: 'DELETE' });
+      await this.fetchAll();
+    },
+
+    async addMemory(form) {
+      await fetch('/api/memory', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      await this.fetchAll();
+    },
+
+    async deleteMemory(id) {
+      await fetch(`/api/memory/${id}`, { method: 'DELETE' });
+      await this.fetchAll();
+    },
+
+    async addHabit(form) {
+      await fetch('/api/habits', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      await this.fetchAll();
+    },
+
+    async deleteHabit(id) {
+      await fetch(`/api/habits/${id}`, { method: 'DELETE' });
+      await this.fetchAll();
+    },
+
+    async addTask(form) {
+      await fetch('/api/tasks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      await this.fetchAll();
+    },
+
+    async deleteTask(id) {
+      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      await this.fetchAll();
+    },
+
+    async acknowledgeCrisis(id) {
+      await fetch(`/api/crisis_events/${id}/acknowledge`, { method: 'PUT' });
+      await this.fetchAll();
+    },
+
+    async injectAnomaly() {
+      await this.logEvent('anomaly', 'Simulated missed medication', 3);
+      await this.fetchAll();
+    },
+  };
+}
+</script>
